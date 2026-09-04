@@ -1,8 +1,6 @@
 import type { BotContext } from "../types.js";
 
-export async function helpHandler(ctx: BotContext): Promise<void> {
-  const isVerified = !!ctx.userId;
-
+export function buildHelpMessage(isVerified: boolean): string {
   const publicCommands = [
     "/start - Iniciar el bot",
     "/verificar - Verificar tu identidad",
@@ -19,6 +17,7 @@ export async function helpHandler(ctx: BotContext): Promise<void> {
     "*💳 Pagos*",
     "/pagos - Resumen de mis pagos",
     "/proximo\\_pago - Mi próximo pago pendiente",
+    "/pagos\\_orden [ID] - Pagos de una orden",
     "",
     "*🧾 Órdenes*",
     "/ordenes - Listar mis órdenes",
@@ -38,9 +37,13 @@ export async function helpHandler(ctx: BotContext): Promise<void> {
   } else {
     lines.push(
       "",
-      "_Verifica tu identidad con /verificar para acceder a más comandos._"
+      "_Verifica tu identidad con /verificar para acceder a más comandos._",
     );
   }
 
-  await ctx.reply(lines.join("\n"), { parse_mode: "Markdown" });
+  return lines.join("\n");
+}
+
+export async function helpHandler(ctx: BotContext): Promise<void> {
+  await ctx.reply(buildHelpMessage(!!ctx.userId), { parse_mode: "Markdown" });
 }

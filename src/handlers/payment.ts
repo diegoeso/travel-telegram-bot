@@ -3,6 +3,7 @@ import { requireAuth } from "../middleware/data-scope.js";
 import {
   getAllPaymentsForUser,
   getNextPendingPayment,
+  getPaymentsByOrder,
 } from "../services/payment.service.js";
 import {
   transformPayment,
@@ -11,11 +12,9 @@ import {
   buildPaymentSummary,
   formatPaymentSummaryMessage,
 } from "../transformers/payment.transformer.js";
-import { formatCurrency, formatDateShort } from "../utils/formatter.js";
-
 export const paymentsHandler = requireAuth(async (ctx: BotContext) => {
   const { bookingPayments, orderPayments } = await getAllPaymentsForUser(
-    ctx.userId!
+    ctx.userId!,
   );
 
   const allPayments = [...bookingPayments, ...orderPayments];
@@ -76,4 +75,49 @@ export const nextPaymentHandler = requireAuth(async (ctx: BotContext) => {
   await ctx.reply(`⏰ *Próximo pago pendiente*\n\n${source}\n\n${message}`, {
     parse_mode: "Markdown",
   });
+});
+
+export const paymentsOrderHandler = requireAuth(async (ctx: BotContext) => {
+  const text = ctx.message?.text || "";
+  const parts = text.split(/\s+/);
+  const rawId = parts[1]?.replace(/^#/, "") || "";
+  const orderId = Number(rawId);
+
+  if (!rawId || !Number.isInteger(orderId) || orderId <= 0) {
+    await ctx.reply(
+      "Uso: /pagos\\_orden \\[ID]\n\nEjemplo: `/pagos_orden 123`",
+      { parse_mode: "Markdown" },
+    );
+    return;
+  }
+
+  const payments = await getPaymentsByOrder(ctx.userId!, orderId);
+
+  if (payments === null) {
+    await ctx.reply(
+      "❌ No se encontró una orden con ese ID.\n" +
+        "Verifica el ID o usa /ordenes para ver las tuyas.",
+    );
+    return;
+  }
+
+  if (!payments.length) {
+    await ctx.reply(`💳 La orden #${orderId} no tiene pagos registrados.`);
+    return;
+  }
+
+  const summary = buildPaymentSummary(payments as any);
+  const lines = [
+    `💳 *Pagos de la orden #${orderId}*`,
+    "",
+    formatPaymentSummaryMessage(summary),
+    "",
+  ];
+
+  for (let i = 0; i < payments.length; i++) {
+    lines.push(formatPaymentListItem(payments[i] as any, i));
+    if (i < payments.length - 1) lines.push("");
+  }
+
+  await ctx.reply(lines.join("\n"), { parse_mode: "Markdown" });
 });

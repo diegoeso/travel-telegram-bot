@@ -8,6 +8,16 @@ export async function packagesHandler(ctx: BotContext): Promise<void> {
       is_active: true,
       deleted_at: null,
     },
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      discount_price: true,
+      days: true,
+      nights: true,
+      adults: true,
+      hotel_id: true,
+    },
     take: 10,
     orderBy: { is_promoted: "desc" },
   });

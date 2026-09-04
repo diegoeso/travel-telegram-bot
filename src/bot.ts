@@ -11,9 +11,16 @@ import { authConversation } from "./conversations/auth-flow.js";
 import { supportConversation } from "./conversations/support-flow.js";
 
 import { startHandler } from "./handlers/start.js";
-import { helpHandler } from "./handlers/help.js";
-import { listBookingsHandler, bookingDetailHandler } from "./handlers/booking.js";
-import { paymentsHandler, nextPaymentHandler } from "./handlers/payment.js";
+import { helpHandler, buildHelpMessage } from "./handlers/help.js";
+import {
+  listBookingsHandler,
+  bookingDetailHandler,
+} from "./handlers/booking.js";
+import {
+  paymentsHandler,
+  nextPaymentHandler,
+  paymentsOrderHandler,
+} from "./handlers/payment.js";
 import { listOrdersHandler, orderDetailHandler } from "./handlers/order.js";
 import { packagesHandler } from "./handlers/packages.js";
 import { logoutHandler } from "./handlers/logout.js";
@@ -33,7 +40,24 @@ export function createBot(): Bot<BotContext> {
   // --- Auth middleware (después de conversations para que no bloquee /start) ---
   bot.use(authMiddleware);
 
+  const GREETINGS = [
+    "hola",
+    "hi",
+    "buenos dias",
+    "buenas tardes",
+    "buenas noches",
+    "iniciar",
+  ];
+
+  bot.hears(GREETINGS, async (ctx) => {
+    await ctx.reply(
+      `Hola, ¿en qué puedo ayudarte?\n\n${buildHelpMessage(!!ctx.userId)}`,
+      { parse_mode: "Markdown" },
+    );
+  });
+
   // --- Comandos públicos ---
+  bot.command("iniciar", startHandler);
   bot.command("start", startHandler);
   bot.command("ayuda", helpHandler);
   bot.command("help", helpHandler);
@@ -51,6 +75,7 @@ export function createBot(): Bot<BotContext> {
   bot.command("proximo_pago", nextPaymentHandler);
   bot.command("ordenes", listOrdersHandler);
   bot.command("orden", orderDetailHandler);
+  bot.command("pagos_orden", paymentsOrderHandler);
   bot.command("soporte", async (ctx) => {
     await ctx.conversation.enter("support");
   });
@@ -59,15 +84,20 @@ export function createBot(): Bot<BotContext> {
   // --- Mensaje no reconocido ---
   bot.on("message:text", async (ctx) => {
     await ctx.reply(
-      "No entendí tu mensaje. Usa /ayuda para ver los comandos disponibles."
+      "No entendí tu mensaje. Usa /ayuda para ver los comandos disponibles.",
     );
   });
 
   // --- Error handler ---
   bot.catch((err) => {
     const ctx = err.ctx;
-    console.error(`Error procesando update ${ctx.update.update_id}:`, err.error);
-    ctx.reply("⚠️ Ocurrió un error procesando tu solicitud. Intenta de nuevo.").catch(() => {});
+    console.error(
+      `Error procesando update ${ctx.update.update_id}:`,
+      err.error,
+    );
+    ctx
+      .reply("⚠️ Ocurrió un error procesando tu solicitud. Intenta de nuevo.")
+      .catch(() => {});
   });
 
   return bot;

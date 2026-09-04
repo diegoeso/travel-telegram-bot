@@ -1,21 +1,31 @@
 import { prisma } from "../config/database.js";
 
-async function enrichOrder(order: any) {
-  let packageName: string | null = null;
-  if (order.package_id) {
-    const pkg = await prisma.packages.findFirst({
+async function enrichOrder(order: {
+  id: bigint;
+  package_id: number;
+  payment_method_id: number;
+  status_id: number;
+}) {
+  const [pkg, paymentMethod, status] = await Promise.all([
+    prisma.packages.findFirst({
       where: { id: BigInt(order.package_id) },
       select: { name: true },
-    });
-    packageName = pkg?.name || null;
-  }
-
+    }),
+    prisma.catalog_payment_method.findFirst({
+      where: { id: BigInt(order.payment_method_id) },
+      select: { name: true },
+    }),
+    prisma.catalog_order_status.findFirst({
+      where: { id: BigInt(order.status_id) },
+      select: { name: true },
+    }),
+  ]);
   return {
     ...order,
     id: Number(order.id),
-    package: packageName ? { name: packageName } : null,
-    statusType: null,
-    paymentMethod: null,
+    package: pkg ? { name: pkg.name } : null,
+    paymentMethod: paymentMethod ? { name: paymentMethod.name } : null,
+    statusType: status ? { name: status.name } : null,
   };
 }
 

@@ -41,3 +41,8 @@ export function formatCurrency(
 export function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? `${count} ${singular}` : `${count} ${plural}`;
 }
+
+/** Escapa _, *, ` y [ para el Markdown clásico de Telegram. */
+export function escapeMarkdown(text: string): string {
+  return text.replace(/([_*`\[])/g, "\\$1");
+}

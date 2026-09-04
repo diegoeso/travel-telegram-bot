@@ -3,6 +3,7 @@ import { requireAuth } from "../middleware/data-scope.js";
 import {
   getOrdersByUserId,
   getOrderByNumber,
+  getOrderById,
 } from "../services/order.service.js";
 import {
   transformOrder,
@@ -33,24 +34,24 @@ export const listOrdersHandler = requireAuth(async (ctx: BotContext) => {
 export const orderDetailHandler = requireAuth(async (ctx: BotContext) => {
   const text = ctx.message?.text || "";
   const parts = text.split(/\s+/);
-  const orderNumber = parts[1];
+  const orderId = parts[1];
 
-  if (!orderNumber) {
+  if (!orderId) {
     await ctx.reply(
-      "Uso: /orden [número]\n\n" +
-        "Ejemplo: `/orden ORD-00456`\n\n" +
-        "Usa /ordenes para ver tus números de orden.",
-      { parse_mode: "Markdown" }
+      "Uso: /orden [ID]\n\n" +
+        "Ejemplo: `/orden 123`\n\n" +
+        "Usa /ordenes para ver tus IDs de orden.",
+      { parse_mode: "Markdown" },
     );
     return;
   }
 
-  const order = await getOrderByNumber(ctx.userId!, orderNumber);
+  const order = await getOrderById(ctx.userId!, Number(orderId));
 
   if (!order) {
     await ctx.reply(
-      "❌ No se encontró una orden con ese número.\n" +
-        "Verifica el número o usa /ordenes para ver las tuyas."
+      "❌ No se encontró una orden con ese ID.\n" +
+        "Verifica el ID o usa /ordenes para ver las tuyas.",
     );
     return;
   }

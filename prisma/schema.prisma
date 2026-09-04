@@ -619,12 +619,11 @@ model packages {
   id                   BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   name                 String    @db.VarChar(255)
   description          String?   @db.Text
-  days                 String?   @db.Text
-  nights               String?   @db.Text
+  days                 Int?      @db.UnsignedSmallInt
+  nights               Int?      @db.UnsignedSmallInt
   price                Decimal   @db.Decimal(10, 2)
   discount_price       Decimal   @db.Decimal(10, 2)
   currency             String    @db.VarChar(3)
-  duration             Int
   adults               Int?      @db.TinyInt
   childrens            Int?      @db.TinyInt
   juniors              Int?      @db.TinyInt
