@@ -116,16 +116,19 @@ php artisan migrate
 ### 2.4 Instalar dependencias y compilar
 
 ```bash
-cd ~/app
-npm ci --omit=dev
+cd ~/app   # o: cd /home/goadmin-bot/htdocs/bot.goadmintravel.com
+npm ci
 npx prisma generate
 npm run build
+npm prune --omit=dev
 ```
+
+> `typescript` y `prisma` viven en `devDependencies`. Por eso el install de build usa `npm ci` completo y luego `npm prune --omit=dev` deja el runtime limpio.
 
 ### 2.5 Crear directorio de logs
 
 ```bash
-mkdir -p ~/logs
+mkdir -p logs
 ```
 
 ### 2.6 Iniciar el bot con PM2
@@ -160,29 +163,24 @@ su - travel-bot
 cd ~/app
 ```
 
-### Opción A: Usar el script de deploy
+### Opción A: Usar el script de deploy (recomendado)
 
 ```bash
 git pull origin main
 bash deploy.sh
 ```
 
+> `deploy.sh` no hace `git pull`. Valida Node/.env, ejecuta `npm ci` → `prisma generate` → `build` → `npm prune --omit=dev` y reinicia PM2. Usar esta opción para **todas** las actualizaciones (incluidos cambios solo de código): tras un deploy con prune, `npm run build` aislado falla porque TypeScript ya no está instalado.
+
 ### Opción B: Manualmente
 
 ```bash
 git pull origin main
-npm ci --omit=dev
+npm ci
 npx prisma generate
 npm run build
-pm2 restart travel-telegram-bot
-```
-
-### Deploy rápido (solo cambios en código, sin nuevas dependencias)
-
-```bash
-git pull origin main
-npm run build
-pm2 restart travel-telegram-bot
+npm prune --omit=dev
+pm2 restart travel-telegram-bot --update-env
 ```
 
 ---
@@ -229,18 +227,19 @@ redis-cli keys "tg:*"  # Ver claves del bot
 
 ## 5. Estructura en el servidor
 
+> En este servidor la ruta real del proyecto es `/home/goadmin-bot/htdocs/bot.goadmintravel.com`. En otros entornos Hostinger puede usarse `~/app` como directorio genérico del repositorio clonado.
+
 ```
-/home/travel-bot/
-├── app/                    # Repositorio clonado
-│   ├── dist/               # Código compilado (generado)
-│   ├── src/                # Código fuente
-│   ├── prisma/             # Schema de Prisma
-│   ├── node_modules/       # Dependencias (generado)
-│   ├── ecosystem.config.cjs
-│   ├── deploy.sh
-│   ├── package.json
-│   └── .env                # Variables de entorno (NO en el repo)
-└── logs/                   # Logs de PM2
+/home/goadmin-bot/htdocs/bot.goadmintravel.com/
+├── dist/
+├── src/
+├── prisma/
+├── node_modules/
+├── ecosystem.config.cjs
+├── deploy.sh
+├── package.json
+├── .env
+└── logs/
     ├── error.log
     └── out.log
 ```
@@ -270,7 +269,7 @@ p.\$connect().then(() => { console.log('DB OK'); p.\$disconnect(); }).catch(e =>
 
 ```bash
 chown -R travel-bot:travel-bot /home/travel-bot/app
-chown -R travel-bot:travel-bot /home/travel-bot/logs
+chown -R travel-bot:travel-bot /home/travel-bot/app/logs
 ```
 
 ### Redis no conecta
@@ -292,9 +291,7 @@ kill -9 <PID>
 ```bash
 cd ~/app
 rm -rf node_modules/.prisma
-npx prisma generate
-npm run build
-pm2 restart travel-telegram-bot
+bash deploy.sh
 ```
 
 ---
@@ -328,10 +325,11 @@ apt update && apt upgrade -y
 cd ~/app
 git log --oneline -5           # Ver últimos commits
 git checkout <commit-hash>     # Ir a un commit específico
-npm ci --omit=dev
+npm ci
 npx prisma generate
 npm run build
-pm2 restart travel-telegram-bot
+npm prune --omit=dev
+pm2 restart travel-telegram-bot --update-env
 ```
 
 ### Volver a la última versión estable

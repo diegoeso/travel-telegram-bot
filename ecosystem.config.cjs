@@ -2,7 +2,10 @@ module.exports = {
   apps: [
     {
       name: "travel-telegram-bot",
+      cwd: __dirname,
+      interpreter: process.env.DEPLOY_NODE_BIN || "node",
       script: "dist/index.js",
+      exec_mode: "fork",
       instances: 1,
       autorestart: true,
       watch: false,
